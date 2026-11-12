@@ -1,0 +1,791 @@
+<title>AI-OS ทีมกลไก</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg:#F7F6F3; --surface:#FFFFFF; --border:#E0DDD6; --text:#1A1A1A; --t2:#5A5A5A; --t3:#9A9890;
+  --ink:#1A1A1A; --ink-fg:#FFFFFF; --focus:#1A5FA8;
+  --ok:#1A7A56; --okbg:#E1F0E8; --warn:#8A5A00; --warnbg:#FAEFD2; --bad:#A8221A; --badbg:#F8E1DE; --mutebg:#ECEAE4;
+  --a0:#1A7A56; --a1:#1A5FA8; --a2:#B05000; --a3:#7C5BBF; --a4:#A8221A; --a5:#1A7A8A;
+  --r:14px; --rs:10px;
+  --sans:'IBM Plex Sans Thai',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:#151513; --surface:#1E1E1B; --border:#35342F; --text:#EEECE7; --t2:#B4B1A8; --t3:#7F7C74;
+    --ink:#EEECE7; --ink-fg:#151513; --focus:#7DB0F0;
+    --ok:#5CC29A; --okbg:#17332A; --warn:#E5B75A; --warnbg:#35290F; --bad:#F08A80; --badbg:#3A1E1B; --mutebg:#2A2927;
+    --a0:#4DB58A; --a1:#6AA3E6; --a2:#E08A4A; --a3:#A58BE0; --a4:#E26B60; --a5:#4DB6C6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:#151513; --surface:#1E1E1B; --border:#35342F; --text:#EEECE7; --t2:#B4B1A8; --t3:#7F7C74;
+  --ink:#EEECE7; --ink-fg:#151513; --focus:#7DB0F0;
+  --ok:#5CC29A; --okbg:#17332A; --warn:#E5B75A; --warnbg:#35290F; --bad:#F08A80; --badbg:#3A1E1B; --mutebg:#2A2927;
+  --a0:#4DB58A; --a1:#6AA3E6; --a2:#E08A4A; --a3:#A58BE0; --a4:#E26B60; --a5:#4DB6C6;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.6;
+  padding-block: 20px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+#view:not(.wide) { max-width: 880px; margin: 0 auto; width: 100%; }
+h1, h2, h3, p { margin: 0; text-wrap: balance; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { opacity: .4; cursor: default; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.top h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+.tag { font-family: var(--mono); font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: var(--warnbg); color: var(--warn); }
+.tabs { display: flex; gap: 4px; padding: 4px; background: var(--mutebg); border-radius: var(--r); overflow-x: auto; }
+.tabs button { flex: 1 0 auto; border: 0; background: transparent; padding: 9px 14px; border-radius: var(--rs); color: var(--t2); font-weight: 500; white-space: nowrap; }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 0 var(--border); }
+.note { font-size: 13px; color: var(--t2); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.sec-h h2 { font-size: 16px; font-weight: 600; }
+.sec-h .count { font-family: var(--mono); font-size: 12.5px; color: var(--t2); }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.grow { flex: 1 1 200px; min-width: 0; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.empty { color: var(--t2); font-size: 14px; padding: 6px 0; }
+
+.btn { border: 1px solid var(--border); background: var(--surface); padding: 8px 14px; border-radius: var(--rs); font-weight: 500; }
+.btn:hover { border-color: var(--t3); }
+.btn.primary { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
+.btn.danger { color: var(--bad); }
+.btn.small { padding: 4px 10px; font-size: 13px; }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--t2); }
+.btn[aria-pressed="true"] { background: var(--okbg); color: var(--ok); border-color: var(--ok); }
+input[type=text], input[type=date], input[type=time], select, textarea { width: 100%; border: 1px solid var(--border); background: var(--bg); border-radius: var(--rs); padding: 8px 10px; min-width: 0; }
+textarea { resize: vertical; min-height: 84px; }
+label.f { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--t2); min-width: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.chk { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
+.chk input { width: 18px; height: 18px; accent-color: var(--ok); }
+
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; padding: 1px 9px; border-radius: 999px; background: var(--mutebg); color: var(--t2); white-space: nowrap; }
+.pill.ok { background: var(--okbg); color: var(--ok); } .pill.warn { background: var(--warnbg); color: var(--warn); } .pill.bad { background: var(--badbg); color: var(--bad); }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.tagp { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--mutebg); color: var(--text); max-width: 100%; overflow-wrap: anywhere; }
+
+.tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.task { border-top: 1px solid var(--border); padding: 12px 0; display: flex; flex-direction: column; gap: 10px; }
+.task:first-child { border-top: 0; padding-top: 0; }
+.task-line { display: flex; gap: 12px; align-items: flex-start; }
+.done-btn { flex: none; width: 24px; height: 24px; margin-top: 2px; border-radius: 50%; border: 2px solid var(--t3); background: transparent; display: grid; place-items: center; padding: 0; color: transparent; font-size: 14px; line-height: 1; }
+.done-btn[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: #fff; }
+.tmain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.ttitle { border: 0; background: none; padding: 0; text-align: left; font-weight: 500; font-size: 15.5px; }
+.task.is-done .ttitle { text-decoration: line-through; color: var(--t2); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.blocked { font-size: 13.5px; color: var(--bad); }
+.tbtns { display: flex; gap: 6px; flex-wrap: wrap; }
+.editor { background: var(--bg); border: 1px solid var(--border); border-radius: var(--rs); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rs); padding: 10px 14px; }
+.stat b { display: block; font-family: var(--mono); font-size: 24px; font-weight: 500; line-height: 1.2; }
+.stat span { font-size: 13px; color: var(--t2); }
+.stat.hot b { color: var(--bad); }
+.pcard { border: 1px solid var(--border); border-radius: var(--rs); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pcard.stale { background: var(--bg); }
+.pcard h3 { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.kv { display: grid; grid-template-columns: 90px 1fr; gap: 2px 10px; font-size: 14px; margin: 0; }
+.kv dt { color: var(--t2); } .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.line-h { font-size: 13px; letter-spacing: .03em; color: var(--t2); font-weight: 500; margin-top: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); font-size: 14px; }
+.chip button { border: 0; background: transparent; width: 24px; height: 24px; border-radius: 50%; color: var(--t2); line-height: 1; }
+
+/* board */
+.board { display: flex; flex-direction: column; gap: 14px; }
+.bcol { display: contents; }
+.bg { order: var(--o); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; min-width: 0; }
+.bgh { color: var(--text); padding: 12px 14px; font-size: 16px; line-height: 1.4; display: flex; flex-direction: column; gap: 8px; border-top: 4px solid var(--gc); border-bottom: 1px solid var(--border); }
+.bgb { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 14px; }
+.secs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; min-width: 0; }
+.bsec { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.bsh { display: flex; flex-direction: column; gap: 6px; color: var(--text); font-size: 15px; }
+.bsel { width: 100%; font-size: 13.5px; padding: 5px 8px; }
+.steps-l { list-style: none; margin: 0 0 0 6px; padding: 0 0 0 16px; border-left: 2px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+.bs { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; position: relative; }
+.bs::before { content: ""; position: absolute; left: -16px; top: .8em; width: 12px; border-top: 2px solid var(--border); }
+.bs.done .bin { text-decoration: line-through; color: var(--t2); }
+.bs.next .bin { font-weight: 600; }
+.bchk { flex: none; width: 22px; height: 22px; margin-top: 2px; border-radius: 50%; border: 2px solid var(--t3); background: var(--surface); color: transparent; font-size: 12px; line-height: 1; padding: 0; display: grid; place-items: center; }
+.bchk[aria-pressed="true"] { background: var(--gc); border-color: var(--gc); color: #fff; }
+.bnew { display: flex; gap: 6px; flex-wrap: wrap; }
+.htools { display: flex; flex-wrap: wrap; gap: 6px; }
+.hbtn { border: 1px solid var(--border); background: var(--bg); color: var(--t2); border-radius: 8px; padding: 3px 10px; font-size: 13px; font-weight: 500; }
+.hbtn.warn { background: var(--badbg); color: var(--bad); border-color: var(--bad); }
+.hbtn:disabled { opacity: .4; }
+
+/* inline-editable text */
+input.bin, textarea.bin { width: 100%; border: 1px solid transparent; background: transparent; padding: 3px 6px; border-radius: 8px; color: inherit; font: inherit; }
+input.bin:hover, textarea.bin:hover { border-color: var(--border); background: var(--surface); }
+input.bin:focus, textarea.bin:focus { border-color: var(--focus); background: var(--surface); outline: none; }
+input.bin.bgn { font-weight: 600; font-size: 16px; }
+.bsh input.bin { font-size: 13.5px; color: var(--t2); }
+.bs .bin { flex: 1 1 140px; min-width: 0; background: var(--bg); border-color: var(--border); }
+textarea.bin { min-height: 0; resize: none; overflow: hidden; line-height: 1.5; display: block; }
+.bs textarea.bin { background: var(--bg); border-color: var(--border); }
+
+/* meetings */
+.mc { gap: 10px; }
+.mhead { display: flex; flex-direction: column; gap: 8px; }
+.mbody { display: flex; flex-direction: column; gap: 14px; border-top: 1px solid var(--border); padding-top: 14px; }
+.mlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.mitem { border: 1px solid var(--border); border-radius: var(--rs); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); }
+.mitem.is-concl { border-color: var(--ok); }
+.mrow1 { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.mrow1 .mk { width: auto; min-width: 120px; }
+.mitem textarea.bin { background: var(--surface); border-color: var(--border); }
+.bnew select { width: auto; }
+
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--ink-fg); padding: 10px 16px; border-radius: var(--rs); font-size: 14px; max-width: min(92vw, 520px); z-index: 20; }
+.toast[hidden] { display: none; }
+@media (min-width: 900px) {
+  .board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.1fr) minmax(0, 1fr); align-items: start; }
+  .bcol { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .bg { order: 0; }
+}
+@media (max-width: 480px) { .kv { grid-template-columns: 1fr; } .kv dt { margin-top: 4px; } }
+@media (prefers-reduced-motion: no-preference) { .btn, .done-btn { transition: background-color .12s, border-color .12s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>AI-OS ทีมกลไก</h1>
+    <span class="tag" id="sync">บันทึกในเครื่องนี้เท่านั้น</span>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="เมนูหลัก">
+    <button role="tab" data-act="tab" data-tab="overview" id="tab-overview">ภาพรวม</button>
+    <button role="tab" data-act="tab" data-tab="meet" id="tab-meet">ประชุม</button>
+    <button role="tab" data-act="tab" data-tab="tasks" id="tab-tasks">งาน</button>
+    <button role="tab" data-act="tab" data-tab="settings" id="tab-settings">ตั้งค่า</button>
+  </nav>
+  <main id="view"></main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  var KEY = 'aios-webapp-trial-v1';
+  var STATUS = { Inbox: 'จดไว้', Next: 'ทำต่อไป', Doing: 'กำลังทำ', Waiting: 'รอคนอื่น', Done: 'เสร็จแล้ว' };
+  var RAG = { g: '🟢 ตามแผน', y: '🟡 ต้องจับตา', r: '🔴 ติดขัด', u: '⚪ ไม่ทราบ' };
+  var MSTATUS = { plan: 'วางแผน', live: 'กำลังประชุม', done: 'เสร็จแล้ว' };
+  var KINDS = ['ประเด็น', 'ข้อสรุป', 'งาน', 'เลื่อนนัด'];
+  var MONEY = /บาท|฿|\d{1,3}(,\d{3})+/;
+
+  /* ---------- helpers ---------- */
+  function uid() { return Math.random().toString(36).slice(2, 9); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function iso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function startOfToday() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+  function todayISO() { return iso(startOfToday()); }
+  function plus(n) { var d = startOfToday(); d.setDate(d.getDate() + n); return iso(d); }
+  function parse(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function diff(s) { return Math.round((parse(s) - startOfToday()) / 864e5); }
+  function fmt(s) { return s ? parse(s).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : ''; }
+  function fmtY(s) { return s ? parse(s).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) : ''; }
+  function nowStamp() { var d = new Date(); return todayISO() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function mi(kind, t) { return { id: uid(), kind: kind, t: t, linked: false }; }
+
+  /* ---------- sample data (ตัวอย่างเท่านั้น) ---------- */
+  function sampleBoard() {
+    function G(name, line, col, c, secs) { return { id: uid(), name: name, line: line, col: col, c: c, sections: secs }; }
+    function X(name, area, steps) { return { id: uid(), name: name, area: area, steps: steps.map(function (t) { return { id: uid(), t: t, done: false }; }) }; }
+    var arch = 'ประสานทีมสถาปนิก เพื่อสำรวจพื้นที่ / ออกแบบ';
+    return { asOf: '2026-10-20', groups: [
+      G('บางยี่ขัน', 'AREA-BYK ย่านบางยี่ขัน', 0, 3, [X('', 'บางยี่ขัน', ['นัดนำเสนอกับแกนนำ (อีกครั้ง) เพื่อวางแผนการจัดกระบวนการมีส่วนร่วม', 'เข้าพบ ผอ.เขต เพื่อนำเสนอเบื้องต้น', 'จัดกระบวนการออกแบบอย่างมีส่วนร่วม', 'พัฒนาแบบ', 'คืนแบบ / วางแผนการดำเนินการ'])]),
+      G('ปรับปรุงบ้านกลุ่มเปราะบาง', 'CUR-01 ปรับบ้านให้อยู่ดี', 1, 0, [
+        X('ทต. หลักหก', 'หลักหก', [arch, 'นำเสนอผลการสำรวจกับเทศบาล', 'ออกแบบ', 'นำเสนอแบบกับเทศบาล']),
+        X('ทม. ไร่ขิง', 'ไร่ขิง', [arch, 'คืนแบบ / วางแผนการดำเนินการ', 'นำเสนอผลกับเทศบาล', 'ขับเคลื่อนการสำรวจกลุ่มเปราะบางหมู่บ้านพฤกษา 5']),
+        X('ทต.บางปู', 'บางปู', [arch, 'คืนแบบ / วางแผนการดำเนินการ', 'นำเสนอผลกับเทศบาล']),
+        X('ทน. บางบัวทอง', 'บางบัวทอง', ['รอนัดหมายจากทีมร.ร.เนือยนิ่ง', 'ติดตามความเห็นของคุณนี เรื่องการปรึกษาการปรับปรุงบ้าน'])]),
+      G('อยู่ดีตายดี', 'CUR-02 อยู่ดี ตายดี', 2, 5, [
+        X('ทต. หนองเสือ', 'หนองเสือ', ['ประชุมประเมิน / วางแผนต่อเนื่อง']),
+        X('ทน. บางบัวทอง / ทต. ทับมา', 'บางบัวทอง', ['ติดตามเพื่อสนับสนุน']),
+        X('ทม.ไร่ขิง / ชุมชนตลาดหลักสี่', 'ไร่ขิง', ['(อาจ) ไม่มีการดำเนินการต่อ'])]),
+      G('สื่อ', 'KM สตูและเผยแพร่', 0, 4, [X('', '', ['ทยอยผลิต Post: นำเสนอแนวคิดการปรับปรุงบ้านฯ', 'ทยอยผลิต Post: Post ที่มาโครงการ', 'คุยกับบรรณาธิการคู่มือโรงเรียนผู้สูงอายุ (โจ้)'])]),
+      G('ส่วนกลาง', 'ส่วนกลาง', 2, 2, [X('', '', ['รายงาน: รายงานการทำงาน', 'รายงาน: ข้อมูลพื้นฐานของพื้นที่', 'การเงิน'])])
+    ] };
+  }
+  function sample() {
+    return {
+      v: 3,
+      owners: ['ผจก.', 'นักสังคม', 'สถาปนิก', 'การเงิน', 'ภาคี/ภายนอก'],
+      lines: ['CUR-01 ปรับบ้านให้อยู่ดี', 'CUR-02 อยู่ดี ตายดี', 'AREA-BYK ย่านบางยี่ขัน', 'LEG-01 ไร่ขิงขยายผล', 'KM สตูและเผยแพร่', 'KNW-01 สังเคราะห์ความรู้', 'ส่วนกลาง'],
+      areas: ['ไร่ขิง', 'หลักหก', 'บางบัวทอง', 'บางปู', 'บางยี่ขัน', 'หนองเสือ'],
+      tasks: [
+        { id: uid(), title: 'เตรียมสไลด์นำเสนอ อปท. เรื่องลำดับบ้านที่จะออกแบบ', owner: 'ผจก.', due: plus(3), status: 'Doing', week: true, blocked: '', area: 'ไร่ขิง', line: 'CUR-01 ปรับบ้านให้อยู่ดี', ex: true },
+        { id: uid(), title: 'นัดหมายกิจกรรมติดตามผลหลังอบรม', owner: 'นักสังคม', due: plus(1), status: 'Next', week: true, blocked: '', area: 'หนองเสือ', line: 'CUR-02 อยู่ดี ตายดี', ex: true },
+        { id: uid(), title: 'ทำผังพื้นที่เบื้องต้นของย่าน', owner: 'สถาปนิก', due: plus(-4), status: 'Waiting', week: true, blocked: 'รอแผนที่ฐานจากภาคี ขอ ผจก. ช่วยตาม', area: 'บางยี่ขัน', line: 'AREA-BYK ย่านบางยี่ขัน', ex: true },
+        { id: uid(), title: 'นัดหารือรองนายกฯ เรื่องร่างข้อเสนอ', owner: 'ผจก.', due: plus(10), status: 'Next', week: false, blocked: '', area: 'ไร่ขิง', line: 'LEG-01 ไร่ขิงขยายผล', ex: true },
+        { id: uid(), title: 'ส่งระบบเก็บไฟล์คู่มือเข้าส่วนกลาง', owner: '', due: '', status: 'Inbox', week: false, blocked: '', area: '', line: 'KM สตูและเผยแพร่', ex: true },
+        { id: uid(), title: 'สรุปผลสำรวจรอบแรกส่งเทศบาล', owner: 'นักสังคม', due: plus(-9), status: 'Done', week: false, blocked: '', area: 'ไร่ขิง', line: 'CUR-01 ปรับบ้านให้อยู่ดี', ex: true }
+      ],
+      progress: [
+        { id: uid(), line: 'CUR-01 ปรับบ้านให้อยู่ดี', area: 'ไร่ขิง', milestone: 'สำรวจ', result: 'สำรวจระดับ 3 ครบกลุ่มแรก', next: 'เสนอ อปท. เลือกบ้านที่จะออกแบบ', nextDate: plus(5), rag: 'y', asOf: plus(-3), conf: 'ยืนยันแล้ว', decide: true, status: 'Verified', ex: true },
+        { id: uid(), line: 'CUR-02 อยู่ดี ตายดี', area: 'หนองเสือ', milestone: 'ติดตามผล', result: 'แกนนำเริ่มนำเครื่องมือไปใช้ในชมรม', next: 'ลงติดตามผล', nextDate: plus(3), rag: 'g', asOf: plus(-10), conf: 'ประเมิน', decide: false, status: 'Verified', ex: true },
+        { id: uid(), line: 'AREA-BYK ย่านบางยี่ขัน', area: 'บางยี่ขัน', milestone: 'ออกแบบร่วม', result: 'เขตลงพื้นที่ประเมินแล้ว อยู่ระหว่างขอใช้พื้นที่', next: 'จัดประชุมรับฟังความเห็น', nextDate: '', rag: 'g', asOf: plus(-20), conf: 'ประเมิน', decide: false, status: 'Verified', ex: true },
+        { id: uid(), line: 'LEG-01 ไร่ขิงขยายผล', area: 'ไร่ขิง', milestone: 'หารือ', result: 'ร่างพร้อม รอนัดหารือ', next: 'นัดหารือรองนายกฯ', nextDate: plus(10), rag: 'y', asOf: plus(-1), conf: 'ประเมิน', decide: false, status: 'Proposed', ex: true }
+      ],
+      meetings: [
+        { id: uid(), name: 'ประชุมทีม · สัปดาห์นี้', date: plus(1), time: '13:00', status: 'plan', line: '', area: '', updated: '', items: [
+          mi('ประเด็น', 'ทบทวนลำดับบ้านที่จะออกแบบ'),
+          mi('ประเด็น', 'ปรึกษาแนวทางขอใช้พื้นที่ของย่านบางยี่ขัน'),
+          mi('งาน', 'ส่งร่างสไลด์ให้ ผจก. ก่อนประชุม') ] },
+        { id: uid(), name: 'ประชุมทีม · สัปดาห์ 43', date: plus(-7), time: '10:00', status: 'done', line: 'CUR-01 ปรับบ้านให้อยู่ดี', area: '', updated: '', items: [
+          mi('ประเด็น', 'ความคืบหน้าการสำรวจบ้านกลุ่มแรก'),
+          mi('ข้อสรุป', 'เลือกบ้านลำดับแรกเพื่อเสนอ อปท.') ] }
+      ],
+      board: sampleBoard()
+    };
+  }
+
+  /* ---------- state + sync ---------- */
+  var S = null, DBREF = null, dirty = false, inflight = false, timer = null, pendingRemote = null;
+  function load() {
+    try { var r = localStorage.getItem(KEY); if (r) { var o = JSON.parse(r); if (o && o.v === 3 && o.tasks) return o; } } catch (e) {}
+    return sample();
+  }
+  function persistLocal() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  function save() { dirty = true; persistLocal(); scheduleRemote(); }
+  function scheduleRemote() { if (!DBREF) return; clearTimeout(timer); timer = setTimeout(flushRemote, 350); }
+  function flushRemote() {
+    if (!DBREF) return;
+    if (inflight) { clearTimeout(timer); timer = setTimeout(flushRemote, 400); return; }
+    inflight = true; dirty = false;
+    DBREF.set(clone(S)).then(function () {
+      inflight = false;
+      if (dirty) scheduleRemote();
+    }, function (e) { inflight = false; dirty = true; onDbError(e); });
+  }
+  function isEditing() { var t = document.activeElement; return !!t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName); }
+  function applyRemote(d) {
+    if (dirty || inflight) return;
+    if (isEditing()) { pendingRemote = d; return; }
+    S = clone(d); persistLocal(); render();
+  }
+  document.addEventListener('focusout', function () {
+    setTimeout(function () {
+      if (pendingRemote && !isEditing() && !dirty && !inflight) { var d = pendingRemote; pendingRemote = null; S = clone(d); persistLocal(); render(); }
+    }, 200);
+  });
+  function setSync(msg) { var el = document.getElementById('sync'); if (el) el.textContent = msg; }
+  function onDbError(e) {
+    var code = e && e.code;
+    var noRight = code === 'revoked' || code === 'invalid_argument';
+    setSync(noRight ? 'ยังไม่มีสิทธิ์บันทึกร่วม' : 'บันทึกไม่สำเร็จ ลองอีกครั้ง');
+    toast(noRight ? 'บัญชีนี้ยังแก้ข้อมูลกลางไม่ได้ ขอสิทธิ์ผู้ร่วมแก้ไขจากผู้จัดการ' : 'บันทึกไม่สำเร็จ ข้อมูลยังอยู่ในเครื่องนี้ ลองกดแก้อีกครั้ง');
+  }
+  function startDb() {
+    var c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    Promise.resolve(c.use('db')).then(function (db) {
+      if (!db) return;
+      DBREF = db.doc('app/main');
+      setSync('กำลังเชื่อมต่อ…');
+      var t = setTimeout(function () { setSync('เชื่อมฐานข้อมูลกลางยังไม่ได้ อาจเห็นข้อมูลที่ไม่ล่าสุด'); }, 10000);
+      DBREF.onSnapshot(function (snap) {
+        clearTimeout(t);
+        if (!snap.exists) { if (!inflight) flushRemote(); setSync('ออนไลน์ · ทีมใช้แผนเดียวกัน'); return; }
+        var d = snap.data();
+        if (d && d.v === 3 && d.tasks) applyRemote(d);
+        setSync(snap.metadata && snap.metadata.fromCache ? 'กำลังโหลดข้อมูลล่าสุด…' : 'ออนไลน์ · ทีมใช้แผนเดียวกัน');
+      }, function (e) { clearTimeout(t); onDbError(e); });
+    }, function () {});
+  }
+
+  /* ---------- UI state ---------- */
+  var ui = { edit: false, progOpen: false, tab: 'overview', owner: 'all', hideDone: false, open: null, meet: null, focus: null, pform: null, confirm: null };
+  var $v = document.getElementById('view');
+  var toastT;
+  function toast(msg) { var t = document.getElementById('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(function () { t.hidden = true; }, 3600); }
+  function opts(list, sel, blank) {
+    var h = blank != null ? '<option value="">' + esc(blank) + '</option>' : '';
+    list.forEach(function (x) { h += '<option value="' + esc(x) + '"' + (x === sel ? ' selected' : '') + '>' + esc(x) + '</option>'; });
+    if (sel && list.indexOf(sel) < 0) h += '<option value="' + esc(sel) + '" selected>' + esc(sel) + '</option>';
+    return h;
+  }
+  function areaDot(a) { var i = S.areas.indexOf(a); return i < 0 ? '' : '<span class="dot" style="background:var(--a' + (i % 6) + ')"></span>'; }
+  function task(id) { return S.tasks.filter(function (t) { return t.id === id; })[0]; }
+  function idxOf(arr, id) { for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return i; return -1; }
+  function swap(arr, i, j) { if (i < 0 || j < 0 || i >= arr.length || j >= arr.length) return; var x = arr[i]; arr[i] = arr[j]; arr[j] = x; }
+  function checkMoney(texts) {
+    for (var i = 0; i < texts.length; i++) if (MONEY.test(texts[i] || '')) { toast('พบตัวเลขเงินในข้อความ ตามกติกาให้เก็บนอกระบบ'); return true; }
+    return false;
+  }
+  function isOpen(t) { return t.status !== 'Done'; }
+  function isOverdue(t) { return isOpen(t) && t.due && diff(t.due) < 0; }
+  function needsAttention(t) { return isOpen(t) && (t.blocked || t.status === 'Waiting' || isOverdue(t)); }
+  function freshness(asOf) {
+    var age = -diff(asOf);
+    if (age <= 7) return { c: 'ok', l: '🟢 สด', age: age, stale: false };
+    if (age <= 14) return { c: 'warn', l: '🟡 เริ่มเก่า', age: age, stale: false };
+    return { c: '', l: '⚪ เก่ากว่า 14 วัน', age: age, stale: true };
+  }
+
+  /* ---------- tasks view ---------- */
+  function dueMeta(t) {
+    if (!t.due) return '';
+    var d = diff(t.due);
+    if (!isOpen(t)) return '<span class="pill">' + esc(fmt(t.due)) + '</span>';
+    if (d < 0) return '<span class="pill bad">เลยกำหนด ' + (-d) + ' วัน</span>';
+    if (d === 0) return '<span class="pill warn">วันนี้</span>';
+    return '<span class="pill">' + esc(fmt(t.due)) + ' · อีก ' + d + ' วัน</span>';
+  }
+  function taskRow(t) {
+    var open = ui.open === t.id;
+    var h = '<li class="task' + (t.status === 'Done' ? ' is-done' : '') + '"><div class="task-line">' +
+      '<button class="done-btn" data-act="done" data-id="' + t.id + '" aria-pressed="' + (t.status === 'Done') + '" aria-label="ทำเสร็จแล้ว">✓</button>' +
+      '<div class="tmain"><button class="ttitle" data-act="open" data-id="' + t.id + '" aria-expanded="' + open + '">' + esc(t.title) + '</button>' +
+      '<div class="meta">' + (t.owner ? '<span class="pill">' + esc(t.owner) + '</span>' : '<span class="pill warn">ยังไม่มีผู้รับผิดชอบ</span>') +
+      '<span class="pill ' + (t.status === 'Waiting' ? 'warn' : '') + '">' + STATUS[t.status] + '</span>' + dueMeta(t) +
+      (t.area ? '<span class="pill">' + areaDot(t.area) + esc(t.area) + '</span>' : '') + '</div>' +
+      (t.blocked ? '<div class="blocked">ติดขัด: ' + esc(t.blocked) + '</div>' : '') + '</div>' +
+      '<div class="tbtns"><button class="btn small" data-act="week" data-id="' + t.id + '" aria-pressed="' + !!t.week + '">สัปดาห์นี้</button>' +
+      '<button class="btn small" data-act="blocked" data-id="' + t.id + '">ติดขัด</button></div></div>';
+    if (open) {
+      h += '<div class="editor"><div class="grid">' +
+        '<label class="f">ชื่องาน<input type="text" data-t="' + t.id + '" data-f="title" value="' + esc(t.title) + '"></label>' +
+        '<label class="f">ผู้รับผิดชอบ<select data-t="' + t.id + '" data-f="owner">' + opts(S.owners, t.owner, '— ยังไม่ระบุ —') + '</select></label>' +
+        '<label class="f">สถานะ<select data-t="' + t.id + '" data-f="status">' + Object.keys(STATUS).map(function (k) { return '<option value="' + k + '"' + (k === t.status ? ' selected' : '') + '>' + STATUS[k] + '</option>'; }).join('') + '</select></label>' +
+        '<label class="f">กำหนดส่ง<input type="date" data-t="' + t.id + '" data-f="due" value="' + esc(t.due) + '"></label>' +
+        '<label class="f">พื้นที่<select data-t="' + t.id + '" data-f="area">' + opts(S.areas, t.area, '— ไม่ระบุ —') + '</select></label>' +
+        '<label class="f">สายงาน<select data-t="' + t.id + '" data-f="line">' + opts(S.lines, t.line, '— ไม่ระบุ —') + '</select></label></div>' +
+        '<label class="f">ติดขัด / ขอความช่วยเหลือ (ลบข้อความเมื่อหมดปัญหา)<input type="text" data-t="' + t.id + '" data-f="blocked" value="' + esc(t.blocked) + '"></label>' +
+        '<div class="row"><button class="btn primary small" data-act="close">เสร็จ</button>' +
+        (ui.confirm === 'del-' + t.id ? '<button class="btn danger small" data-act="delete" data-id="' + t.id + '">ยืนยันลบงานนี้ถาวร</button><button class="btn ghost small" data-act="noconfirm">ไม่ลบ</button>' : '<button class="btn danger small" data-act="askdelete" data-id="' + t.id + '">ลบงาน</button>') +
+        '</div></div>';
+    }
+    return h + '</li>';
+  }
+  function section(title, list, emptyMsg) {
+    return '<section class="card"><div class="sec-h"><h2>' + title + '</h2><span class="count">' + list.length + '</span></div>' +
+      (list.length ? '<ul class="tasks">' + list.map(taskRow).join('') + '</ul>' : '<p class="empty">' + emptyMsg + '</p>') + '</section>';
+  }
+  function viewTasks() {
+    var list = S.tasks.filter(function (t) { return ui.owner === 'all' || t.owner === ui.owner; });
+    if (ui.hideDone) list = list.filter(isOpen);
+    var att = list.filter(needsAttention);
+    var wk = list.filter(function (t) { return isOpen(t) && t.week && att.indexOf(t) < 0; });
+    var rest = list.filter(function (t) { return isOpen(t) && att.indexOf(t) < 0 && wk.indexOf(t) < 0; });
+    var done = list.filter(function (t) { return !isOpen(t); });
+    var who = ui.owner === 'all' ? '' : ui.owner;
+    return '<div class="stack">' +
+      '<div class="card"><div class="row"><input class="grow" type="text" id="quick" placeholder="จดงานใหม่ แล้วกด Enter' + (who ? ' (จะเป็นงานของ ' + esc(who) + ')' : '') + '" aria-label="จดงานใหม่"><button class="btn primary" data-act="quickadd">เพิ่มงาน</button></div>' +
+      '<div class="row"><label class="f grow">แสดงงานของ<select data-filter="owner"><option value="all">ทุกคน</option>' + S.owners.map(function (o) { return '<option value="' + esc(o) + '"' + (o === ui.owner ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="chk"><input type="checkbox" data-filter="hide"' + (ui.hideDone ? ' checked' : '') + '>ซ่อนงานที่เสร็จแล้ว</label>' +
+      '<button class="btn small" data-act="copysum">คัดลอกสรุปงานรายคน</button></div>' +
+      '<p class="note">กดชื่องานเพื่อแก้ไข · ปุ่ม "สัปดาห์นี้" คือคำมั่นของสัปดาห์ · ปุ่ม "ติดขัด" ใช้บอกว่าต้องการให้ใครช่วย</p></div>' +
+      section('ติดขัด / เลยกำหนด', att, 'ไม่มีเรื่องค้าง') +
+      section('ทำสัปดาห์นี้', wk, 'ยังไม่มีงานที่ติ๊ก "สัปดาห์นี้"') +
+      section('งานอื่น ๆ', rest, 'ไม่มีงานอื่น') +
+      (ui.hideDone ? '' : section('เสร็จแล้ว', done, 'ยังไม่มีงานที่เสร็จ')) + '</div>';
+  }
+  function summaryText() {
+    var lines = ['สรุปงานสัปดาห์นี้'];
+    S.owners.forEach(function (o) {
+      var ts = S.tasks.filter(function (t) { return t.owner === o && isOpen(t) && (t.week || needsAttention(t)); });
+      if (!ts.length) return;
+      lines.push('• ' + o + ':');
+      ts.forEach(function (t) { lines.push('   - ' + t.title + (t.due ? ' (ส่ง ' + fmt(t.due) + ')' : '') + (t.blocked ? ' — ติด: ' + t.blocked : '')); });
+    });
+    return lines.join('\n');
+  }
+  function addTask(title) {
+    title = (title || '').trim(); if (!title) { toast('พิมพ์ชื่องานก่อน'); return; }
+    if (checkMoney([title])) return;
+    S.tasks.unshift({ id: uid(), title: title, owner: ui.owner === 'all' ? '' : ui.owner, due: '', status: 'Inbox', week: false, blocked: '', area: '', line: '' });
+    save(); ui.focus = 'quick'; render(); toast('เพิ่มงานแล้ว อยู่ในสถานะ "จดไว้"');
+  }
+
+  /* ---------- meetings view ---------- */
+  function mOf(id) { return S.meetings.filter(function (m) { return m.id === id; })[0]; }
+  function itOf(m, id) { return m.items.filter(function (x) { return x.id === id; })[0]; }
+  function touch(m) { m.updated = nowStamp(); }
+  function itemRow(m, it, i, n) {
+    return '<li class="mitem' + (it.kind === 'ข้อสรุป' ? ' is-concl' : '') + '">' +
+      '<div class="mrow1"><select class="bsel mk" data-mk="' + it.id + '" data-m="' + m.id + '" aria-label="ชนิดรายการ">' + KINDS.map(function (k) { return '<option' + (k === it.kind ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select>' +
+      (it.linked ? '<span class="pill ok">เป็นงานแล้ว</span>' : '') + '<span class="grow"></span>' +
+      '<button class="hbtn" data-act="mitemmove" data-m="' + m.id + '" data-mi="' + it.id + '" data-dir="-1" aria-label="เลื่อนขึ้น"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+      '<button class="hbtn" data-act="mitemmove" data-m="' + m.id + '" data-mi="' + it.id + '" data-dir="1" aria-label="เลื่อนลง"' + (i === n - 1 ? ' disabled' : '') + '>↓</button>' +
+      (it.kind === 'งาน' && !it.linked ? '<button class="hbtn" data-act="mtask" data-m="' + m.id + '" data-mi="' + it.id + '">ส่งเป็นงาน</button>' : '') +
+      '<button class="hbtn warn" data-act="mitemdel" data-m="' + m.id + '" data-mi="' + it.id + '" aria-label="ลบรายการ">✕</button></div>' +
+      '<textarea class="bin bta" rows="1" data-mi="' + it.id + '" data-m="' + m.id + '" aria-label="เนื้อหารายการ">' + esc(it.t) + '</textarea></li>';
+  }
+  function meetCard(m) {
+    var open = ui.meet === m.id, confirming = ui.confirm === 'm-' + m.id;
+    var h = '<section class="card mc"><div class="mhead"><button class="ttitle" data-act="mopen" data-id="' + m.id + '" aria-expanded="' + open + '">' + esc(m.name || '(ยังไม่ตั้งชื่อ)') + '</button>' +
+      '<div class="meta"><span class="pill ' + (m.status === 'done' ? 'ok' : m.status === 'live' ? 'warn' : '') + '">' + MSTATUS[m.status] + '</span>' +
+      '<span class="pill mono">' + esc(fmtY(m.date)) + (m.time ? ' · ' + esc(m.time) : '') + '</span>' +
+      (m.line ? '<span class="pill">' + esc(m.line) + '</span>' : '') +
+      (m.area ? '<span class="pill">' + areaDot(m.area) + esc(m.area) + '</span>' : '') +
+      '<span class="pill">' + m.items.length + ' รายการ</span></div></div>';
+    if (!open) return h + '</section>';
+    h += '<div class="mbody"><div class="grid">' +
+      '<label class="f">ชื่อการประชุม<input type="text" id="mn-' + m.id + '" data-mf="name" data-m="' + m.id + '" value="' + esc(m.name) + '"></label>' +
+      '<label class="f">สถานะ<select data-mf="status" data-m="' + m.id + '">' + Object.keys(MSTATUS).map(function (k) { return '<option value="' + k + '"' + (k === m.status ? ' selected' : '') + '>' + MSTATUS[k] + '</option>'; }).join('') + '</select></label>' +
+      '<label class="f">วันที่ (เปลี่ยนแล้วระบบจดให้อัตโนมัติ)<input type="date" data-mf="date" data-m="' + m.id + '" data-was="' + esc(m.date) + '" value="' + esc(m.date) + '"></label>' +
+      '<label class="f">เวลา<input type="time" data-mf="time" data-m="' + m.id + '" data-was="' + esc(m.time) + '" value="' + esc(m.time) + '"></label>' +
+      '<label class="f">สายงาน<select data-mf="line" data-m="' + m.id + '">' + opts(S.lines, m.line, '— ไม่ระบุ —') + '</select></label>' +
+      '<label class="f">พื้นที่<select data-mf="area" data-m="' + m.id + '">' + opts(S.areas, m.area, '— ไม่ระบุ —') + '</select></label></div>' +
+      '<div class="stack"><div class="sec-h"><h2>รายการ</h2><span class="note">เรียงตามลำดับในรายการ ปรับได้ด้วย ↑ ↓</span></div>' +
+      (m.items.length ? '<ol class="mlist">' + m.items.map(function (it, i) { return itemRow(m, it, i, m.items.length); }).join('') + '</ol>' : '<p class="empty">ยังไม่มีรายการ พิมพ์ด้านล่างได้เลย ระหว่างประชุมหรือหลังประชุม</p>') +
+      '<div class="bnew"><select id="mk-' + m.id + '" aria-label="ชนิดรายการใหม่">' + KINDS.map(function (k) { return '<option>' + k + '</option>'; }).join('') + '</select>' +
+      '<input type="text" class="grow" id="mi-' + m.id + '" placeholder="พิมพ์รายการ แล้วกด Enter" aria-label="รายการใหม่"><button class="btn small" data-act="mitemadd" data-m="' + m.id + '">+ เพิ่ม</button></div></div>' +
+      '<div class="row">' + (confirming ? '<button class="btn danger small" data-act="mdel" data-m="' + m.id + '">ยืนยันลบการประชุมนี้</button><button class="btn small" data-act="noconfirm">ไม่ลบ</button>' : '<button class="btn danger small" data-act="mdelask" data-m="' + m.id + '">ลบการประชุม</button>') +
+      '<span class="note">แก้ล่าสุด ' + esc(m.updated || '—') + '</span></div></div></section>';
+    return h;
+  }
+  function viewMeet() {
+    var M = S.meetings.slice().sort(function (a, b) { return (b.date + b.time).localeCompare(a.date + a.time); });
+    return '<div class="stack"><div class="bar"><button class="btn primary" data-act="mnew">+ ประชุมใหม่</button>' +
+      '<span class="note">ทุกคนที่มีสิทธิ์แก้ไขจดและปรับได้ร่วมกัน ถ้าเปลี่ยนวันหรือเวลา ระบบจะจดไว้ในรายการให้</span></div>' +
+      (M.length ? M.map(meetCard).join('') : '<p class="empty">ยังไม่มีการประชุม กด "+ ประชุมใหม่"</p>') + '</div>';
+  }
+  function meetField(el, type) {
+    var m = mOf(el.dataset.m), f = el.dataset.mf, v = el.value;
+    if (!m) return;
+    if (f === 'name') { if (type !== 'input') return; m.name = v; touch(m); save(); return; }
+    if (type !== 'change') return;
+    if (f === 'date' || f === 'time') {
+      var old = el.dataset.was || '';
+      if (old && old !== v) {
+        var o = f === 'date' ? fmtY(old) : old, n = f === 'date' ? fmtY(v) : v;
+        m.items.push({ id: uid(), kind: 'เลื่อนนัด', t: (f === 'date' ? 'วันที่' : 'เวลา') + ' เปลี่ยนจาก ' + o + ' เป็น ' + n, linked: false });
+      }
+      m[f] = v; touch(m); save(); render(); return;
+    }
+    m[f] = v; touch(m); save(); render();
+  }
+  function meetAct(a, b) {
+    var d = b.dataset, m = d.m ? mOf(d.m) : null, k;
+    if (a === 'mnew') {
+      var nm = { id: uid(), name: 'ประชุมทีม · ' + fmt(todayISO()), date: todayISO(), time: '13:00', status: 'plan', line: '', area: '', items: [], updated: nowStamp() };
+      S.meetings.unshift(nm); ui.meet = nm.id; ui.focus = 'mn-' + nm.id; save(); render(); return true;
+    }
+    if (a === 'mopen') { ui.meet = ui.meet === d.id ? null : d.id; ui.confirm = null; render(); return true; }
+    if (a === 'mitemadd') {
+      if (!m) return true;
+      var inp = document.getElementById('mi-' + m.id), kd = document.getElementById('mk-' + m.id), txt = inp ? inp.value.trim() : '';
+      if (!txt) { toast('พิมพ์รายการก่อน'); return true; }
+      if (checkMoney([txt])) return true;
+      m.items.push({ id: uid(), kind: kd ? kd.value : 'ประเด็น', t: txt, linked: false });
+      touch(m); save(); ui.focus = 'mi-' + m.id; render(); return true;
+    }
+    if (a === 'mitemmove') { if (!m) return true; k = idxOf(m.items, d.mi); swap(m.items, k, k + (+d.dir)); touch(m); save(); render(); return true; }
+    if (a === 'mitemdel') { if (!m) return true; m.items = m.items.filter(function (x) { return x.id !== d.mi; }); touch(m); save(); render(); return true; }
+    if (a === 'mtask') {
+      if (!m) return true;
+      var it = itOf(m, d.mi); if (!it) return true;
+      S.tasks.unshift({ id: uid(), title: it.t, owner: '', due: '', status: 'Next', week: true, blocked: '', area: m.area || '', line: m.line || '', src: m.name });
+      it.linked = true; touch(m); save(); render(); toast('ส่งเป็นงานในแท็บงานแล้ว'); return true;
+    }
+    if (a === 'mdelask') { ui.confirm = 'm-' + (m ? m.id : ''); render(); return true; }
+    if (a === 'mdel') {
+      if (!m) return true;
+      S.meetings = S.meetings.filter(function (x) { return x !== m; });
+      ui.confirm = null; ui.meet = null; save(); render(); toast('ลบการประชุมแล้ว'); return true;
+    }
+    return false;
+  }
+
+  /* ---------- board (แผนงานทุกโครงการ) ---------- */
+  function gOf(id) { return S.board.groups.filter(function (g) { return g.id === id; })[0]; }
+  function sOf(g, id) { return g.sections.filter(function (x) { return x.id === id; })[0]; }
+  function nextStepId(sec) { for (var i = 0; i < sec.steps.length; i++) if (!sec.steps[i].done) return sec.steps[i].id; return null; }
+  function ids(g, sec, st) { return ' data-g="' + g.id + '"' + (sec ? ' data-s="' + sec.id + '"' : '') + (st ? ' data-st="' + st.id + '"' : ''); }
+  function hb(act, g, sec, st, dir, label) { return '<button class="hbtn" data-act="' + act + '"' + ids(g, sec, st) + ' data-dir="' + dir + '" aria-label="' + label + '">' + (dir < 0 ? '↑' : '↓') + '</button>'; }
+  function secView(g, sec) {
+    var h = '<div class="bsec">', nxt = nextStepId(sec);
+    if (sec.name || sec.area || ui.edit) {
+      h += '<div class="bsh">';
+      if (ui.edit) h += '<select class="bsel" data-bf="sarea"' + ids(g, sec) + ' aria-label="พื้นที่">' + opts(S.areas, sec.area, '— ไม่ระบุพื้นที่ —') + '</select>';
+      else if (sec.area) h += '<span class="tagp">' + areaDot(sec.area) + esc(sec.area) + '</span>';
+      h += '<input class="bin" data-bf="sname"' + ids(g, sec) + ' value="' + esc(sec.name) + '" placeholder="ชื่อเรียกในแผน (เว้นว่างได้)" aria-label="ชื่อพื้นที่ย่อย">';
+      if (ui.edit) h += '<div class="htools">' + hb('smove', g, sec, null, -1, 'เลื่อนพื้นที่ย่อยขึ้น') + hb('smove', g, sec, null, 1, 'เลื่อนพื้นที่ย่อยลง') +
+        (ui.confirm === 'bs-' + sec.id ? '<button class="hbtn warn" data-act="sdel"' + ids(g, sec) + '>ยืนยันลบ</button><button class="hbtn" data-act="noconfirm">ไม่ลบ</button>' : '<button class="hbtn" data-act="sdelask"' + ids(g, sec) + '>ลบพื้นที่ย่อย</button>') + '</div>';
+      h += '</div>';
+    }
+    h += '<ul class="steps-l">';
+    if (!sec.steps.length) h += '<li class="empty">ยังไม่มีขั้นตอน</li>';
+    sec.steps.forEach(function (st) {
+      h += '<li class="bs' + (st.done ? ' done' : '') + (st.id === nxt ? ' next' : '') + '"><button class="bchk" data-act="sdone"' + ids(g, sec, st) + ' aria-pressed="' + !!st.done + '" aria-label="ทำขั้นนี้เสร็จแล้ว">✓</button>' +
+        '<textarea class="bin bta" rows="1" data-bf="stext"' + ids(g, sec, st) + ' aria-label="ขั้นตอน">' + esc(st.t) + '</textarea>' + (st.id === nxt ? '<span class="pill ok">ถัดไป</span>' : '') +
+        (ui.edit ? hb('stmove', g, sec, st, -1, 'เลื่อนขั้นขึ้น') + hb('stmove', g, sec, st, 1, 'เลื่อนขั้นลง') + '<button class="hbtn warn" data-act="stdel"' + ids(g, sec, st) + ' aria-label="เอาขั้นนี้ออก">✕</button>' : '') + '</li>';
+    });
+    h += '</ul>';
+    if (ui.edit) h += '<div class="bnew"><input type="text" class="grow" id="ns-' + sec.id + '" placeholder="เพิ่มขั้นตอน แล้วกด Enter" aria-label="เพิ่มขั้นตอน"><button class="btn small" data-act="addstep"' + ids(g, sec) + '>+ เพิ่ม</button></div>';
+    return h + '</div>';
+  }
+  function grpView(g, idx) {
+    var h = '<section class="bg" style="--o:' + idx + ';--gc:var(--a' + (((g.c == null ? idx : g.c) % 6 + 6) % 6) + ')"><div class="bgh">' +
+      '<input class="bin bgn" data-bf="gname"' + ids(g) + ' value="' + esc(g.name) + '" placeholder="ชื่อโครงการ" aria-label="ชื่อโครงการ">' +
+      (ui.edit ? '<select class="bsel" data-bf="gline"' + ids(g) + ' aria-label="สายงาน">' + opts(S.lines, g.line, '— ไม่ระบุสายงาน —') + '</select>' : (g.line ? '<span class="tagp"><span class="dot" style="background:var(--gc)"></span>' + esc(g.line) + '</span>' : ''));
+    if (ui.edit) {
+      h += '<div class="htools"><button class="hbtn" data-act="gcolor"' + ids(g) + ' aria-label="เปลี่ยนสีโครงการ">สี <span class="dot" style="background:var(--gc)"></span></button>' +
+        '<button class="hbtn" data-act="gcol"' + ids(g) + ' data-dir="-1" aria-label="ย้ายไปคอลัมน์ซ้าย">◀</button><button class="hbtn" data-act="gcol"' + ids(g) + ' data-dir="1" aria-label="ย้ายไปคอลัมน์ขวา">▶</button>' +
+        hb('gmove', g, null, null, -1, 'เลื่อนโครงการขึ้น') + hb('gmove', g, null, null, 1, 'เลื่อนโครงการลง') +
+        (ui.confirm === 'bg-' + g.id ? '<button class="hbtn warn" data-act="gdel"' + ids(g) + '>ยืนยันลบทั้งโครงการ</button><button class="hbtn" data-act="noconfirm">ไม่ลบ</button>' : '<button class="hbtn" data-act="gdelask"' + ids(g) + '>ลบโครงการ</button>') + '</div>';
+    }
+    h += '</div><div class="bgb"><div class="secs">' + g.sections.map(function (sec) { return secView(g, sec); }).join('') + '</div>' +
+      (ui.edit ? '<div><button class="btn small" data-act="sadd"' + ids(g) + '>+ เพิ่มพื้นที่ย่อย</button></div>' : '') + '</div></section>';
+    return h;
+  }
+  function boardField(el, v) {
+    var d = el.dataset, g = d.g ? gOf(d.g) : null, sec = g && d.s ? sOf(g, d.s) : null, k;
+    if (d.bf === 'asof') { S.board.asOf = v || todayISO(); save(); render(); return; }
+    if (d.bf === 'gname' && g) g.name = v;
+    else if (d.bf === 'gline' && g) g.line = v;
+    else if (d.bf === 'sarea' && sec) sec.area = v;
+    else if (d.bf === 'sname' && sec) sec.name = v;
+    else if (d.bf === 'stext' && sec) { k = idxOf(sec.steps, d.st); if (k >= 0) sec.steps[k].t = v; }
+    save();
+  }
+  var BA = ['bedit', 'asoftoday', 'gadd', 'gcolor', 'gcol', 'gmove', 'gdelask', 'gdel', 'sadd', 'smove', 'sdelask', 'sdel', 'addstep', 'stmove', 'stdel', 'sdone'];
+  function boardAct(a, b) {
+    if (BA.indexOf(a) < 0) return false;
+    var d = b.dataset, A = S.board.groups, g = d.g ? gOf(d.g) : null, sec = g && d.s ? sOf(g, d.s) : null, dir = +d.dir, k, same;
+    if (a === 'bedit') { ui.edit = !ui.edit; ui.confirm = null; render(); return true; }
+    if (a === 'asoftoday') { S.board.asOf = todayISO(); save(); render(); toast('ตั้งวันที่ข้อมูลเป็นวันนี้แล้ว'); return true; }
+    if (a === 'gadd') { var ng = { id: uid(), name: 'โครงการใหม่', line: '', col: 0, c: A.length % 6, sections: [{ id: uid(), name: '', area: '', steps: [] }] }; A.push(ng); save(); ui.focus = 'gn-' + ng.id; render(); return true; }
+    if (!g) return true;
+    if (a === 'gcolor') { g.c = ((g.c || 0) + 1) % 6; }
+    else if (a === 'gcol') { g.col = Math.max(0, Math.min(2, g.col + dir)); }
+    else if (a === 'gmove') { same = A.filter(function (x) { return x.col === g.col; }); k = same.indexOf(g) + dir; if (k >= 0 && k < same.length) swap(A, A.indexOf(g), A.indexOf(same[k])); }
+    else if (a === 'gdelask') { ui.confirm = 'bg-' + g.id; render(); return true; }
+    else if (a === 'gdel') { S.board.groups = A.filter(function (x) { return x !== g; }); ui.confirm = null; toast('ลบโครงการแล้ว'); }
+    else if (a === 'sadd') { var ns = { id: uid(), name: '', area: '', steps: [] }; g.sections.push(ns); save(); ui.focus = 'sn-' + ns.id; render(); return true; }
+    else if (!sec) return true;
+    else if (a === 'smove') { k = idxOf(g.sections, sec.id); swap(g.sections, k, k + dir); }
+    else if (a === 'sdelask') { ui.confirm = 'bs-' + sec.id; render(); return true; }
+    else if (a === 'sdel') { g.sections = g.sections.filter(function (x) { return x !== sec; }); if (!g.sections.length) g.sections.push({ id: uid(), name: '', area: '', steps: [] }); ui.confirm = null; toast('ลบพื้นที่ย่อยแล้ว'); }
+    else if (a === 'addstep') {
+      var inp = document.getElementById('ns-' + sec.id), txt = inp ? inp.value.trim() : '';
+      if (!txt) { toast('พิมพ์ชื่อขั้นตอนก่อน'); return true; }
+      if (checkMoney([txt])) return true;
+      sec.steps.push({ id: uid(), t: txt, done: false }); save(); ui.focus = 'ns-' + sec.id; render(); return true;
+    }
+    else { k = idxOf(sec.steps, d.st); if (k < 0) return true;
+      if (a === 'stmove') swap(sec.steps, k, k + dir);
+      else if (a === 'stdel') sec.steps.splice(k, 1);
+      else if (a === 'sdone') sec.steps[k].done = !sec.steps[k].done; }
+    save(); render(); return true;
+  }
+  function viewOverview() {
+    var B = S.board, fr = freshness(B.asOf);
+    var h = '<div class="stack"><div class="bar">' +
+      '<button class="btn' + (ui.edit ? ' primary' : '') + '" data-act="bedit">' + (ui.edit ? 'เสร็จ' : 'จัดโครงสร้าง') + '</button>' +
+      (ui.edit ? '<button class="btn" data-act="gadd">+ เพิ่มโครงการ</button><button class="btn small" data-act="asoftoday">ตั้งวันที่ข้อมูลเป็นวันนี้</button>' : '') +
+      '<span class="note">ข้อมูล ณ วันที่ <input type="date" data-bf="asof" value="' + esc(B.asOf) + '" style="width:auto" aria-label="วันที่ข้อมูล"> <span class="pill ' + fr.c + '">' + fr.l + ' · ' + fr.age + ' วันก่อน</span></span></div>';
+    if (!B.groups.length) h += '<p class="empty">ยังไม่มีโครงการ กด "จัดโครงสร้าง" แล้ว "+ เพิ่มโครงการ"</p>';
+    h += '<div class="board">' + [0, 1, 2].map(function (c) { return '<div class="bcol">' + B.groups.map(function (g, i) { return g.col === c ? grpView(g, i) : ''; }).join('') + '</div>'; }).join('') + '</div>';
+    h += '<p class="note">' + (ui.edit ? 'โหมดจัดโครงสร้าง: เพิ่ม ลบ เลื่อนขั้นตอน พื้นที่ย่อย และโครงการ หรือย้ายโครงการไปคอลัมน์อื่น กด "เสร็จ" เมื่อเรียบร้อย' : 'คลิกที่ตัวหนังสือเพื่อแก้ไขได้เลย · กดวงกลมหน้าขั้นตอนเมื่อทำเสร็จ · ป้าย "ถัดไป" คือขั้นแรกที่ยังไม่เสร็จของแต่ละพื้นที่') + '</p>';
+    h += '<details class="card" id="progdet"' + (ui.progOpen || ui.pform ? ' open' : '') + '><summary>ความคืบหน้าที่ยืนยันแล้ว (รายละเอียด ณ วันที่)</summary><div style="margin-top:12px">' + viewProgress() + '</div></details></div>';
+    return h;
+  }
+
+  /* ---------- progress (ใช้ภายในหน้าภาพรวม) ---------- */
+  function pform() {
+    var f = ui.pform; if (!f) return '';
+    return '<section class="card"><div class="sec-h"><h2>' + (f.replaces ? 'แก้ไขความคืบหน้า (สร้างแถวใหม่แทนแถวเดิม)' : 'เพิ่มความคืบหน้า') + '</h2></div>' +
+      (f.replaces ? '<p class="note">แถวที่ยืนยันแล้วจะไม่ถูกแก้ทับ แถวใหม่จะเป็น "รอยืนยัน" และแถวเดิมจะกลายเป็น "ถูกแทนที่" เมื่อคุณกดยืนยัน</p>' : '') +
+      '<div class="grid">' +
+      '<label class="f">สายงาน<select data-pf="line">' + opts(S.lines, f.line, '— เลือก —') + '</select></label>' +
+      '<label class="f">พื้นที่<select data-pf="area">' + opts(S.areas, f.area, '— เลือก —') + '</select></label>' +
+      '<label class="f">ขั้นที่ถึง (Milestone)<input type="text" data-pf="milestone" value="' + esc(f.milestone) + '" placeholder="เช่น สำรวจ, ออกแบบร่วม"></label>' +
+      '<label class="f">ณ วันที่ (วันที่ข้อมูลถูกต้อง)<input type="date" data-pf="asOf" value="' + esc(f.asOf) + '"></label>' +
+      '<label class="f">สถานะ<select data-pf="rag"><option value="g"' + (f.rag === 'g' ? ' selected' : '') + '>🟢 ตามแผน</option><option value="y"' + (f.rag === 'y' ? ' selected' : '') + '>🟡 ต้องจับตา</option><option value="r"' + (f.rag === 'r' ? ' selected' : '') + '>🔴 ติดขัด</option><option value="u"' + (f.rag === 'u' ? ' selected' : '') + '>⚪ ไม่ทราบ</option></select></label>' +
+      '<label class="f">ความมั่นใจของข้อมูล<select data-pf="conf">' + opts(['ยืนยันแล้ว', 'มีเอกสาร', 'ประเมิน', 'ไม่ทราบ'], f.conf) + '</select></label>' +
+      '<label class="f">กิจกรรมถัดไปวันที่<input type="date" data-pf="nextDate" value="' + esc(f.nextDate) + '"></label></div>' +
+      '<label class="f">ผลงานล่าสุด<input type="text" data-pf="result" value="' + esc(f.result) + '"></label>' +
+      '<label class="f">ขั้นต่อไป<input type="text" data-pf="next" value="' + esc(f.next) + '"></label>' +
+      '<label class="chk"><input type="checkbox" data-pf="decide"' + (f.decide ? ' checked' : '') + '>ต้องให้ผู้จัดการตัดสินใจ</label>' +
+      '<div class="row"><button class="btn primary" data-act="psave">บันทึกเป็น "รอยืนยัน"</button><button class="btn ghost" data-act="pcancel">ยกเลิก</button></div></section>';
+  }
+  function pcard(p) {
+    var fr = freshness(p.asOf);
+    var ragKey = fr.stale ? 'u' : p.rag;
+    var ragCls = ragKey === 'g' ? 'ok' : ragKey === 'y' ? 'warn' : ragKey === 'r' ? 'bad' : '';
+    return '<div class="pcard' + (fr.stale ? ' stale' : '') + '"><h3>' + areaDot(p.area) + esc(p.area || 'ไม่ระบุพื้นที่') + ' · ' + esc(p.milestone || 'ยังไม่ระบุขั้น') +
+      '<span class="pill ' + ragCls + '">' + RAG[ragKey] + '</span>' +
+      (p.status === 'Proposed' ? '<span class="pill warn">รอยืนยัน</span>' : '') +
+      (p.decide ? '<span class="pill bad">ต้องตัดสินใจ</span>' : '') + (p.ex ? '<span class="pill">ตัวอย่าง</span>' : '') + '</h3>' +
+      '<dl class="kv"><dt>ผลงาน</dt><dd>' + esc(p.result || '—') + '</dd><dt>ขั้นต่อไป</dt><dd>' + esc(p.next || '—') + (p.nextDate ? ' <span class="mono">(' + esc(fmt(p.nextDate)) + ')</span>' : '') + '</dd>' +
+      '<dt>ข้อมูล ณ วันที่</dt><dd><span class="mono">' + esc(fmt(p.asOf)) + '</span> <span class="pill ' + fr.c + '">' + fr.l + ' · ' + fr.age + ' วันก่อน</span> <span class="pill">' + esc(p.conf) + '</span></dd></dl>' +
+      (fr.stale ? '<p class="note">เก่ากว่า 14 วัน ระบบถือว่า "ไม่ทราบ" ไม่ใช่ "ตามแผน" ควรเอาเข้าวาระประชุมเพื่อยืนยันข้อมูลใหม่</p>' : '') +
+      '<div class="row">' + (p.status === 'Proposed' ? '<button class="btn primary small" data-act="pverify" data-id="' + p.id + '">ยืนยันแล้ว</button>' : '') +
+      '<button class="btn small" data-act="pedit" data-id="' + p.id + '">' + (p.status === 'Verified' ? 'แก้ไข (สร้างแถวใหม่)' : 'แก้ไข') + '</button>' +
+      (p.status === 'Proposed' ? '<button class="btn danger small" data-act="pdel" data-id="' + p.id + '">เอาออก</button>' : '') + '</div></div>';
+  }
+  function viewProgress() {
+    var open = S.tasks.filter(isOpen);
+    var prop = S.progress.filter(function (p) { return p.status === 'Proposed'; }).length;
+    var live = S.progress.filter(function (p) { return p.status !== 'Superseded'; });
+    var h = '<div class="stack"><div class="stats">' +
+      '<div class="stat"><b>' + open.length + '</b><span>งานค้าง</span></div>' +
+      '<div class="stat' + (open.filter(isOverdue).length ? ' hot' : '') + '"><b>' + open.filter(isOverdue).length + '</b><span>เลยกำหนด</span></div>' +
+      '<div class="stat"><b>' + open.filter(function (t) { return t.blocked || t.status === 'Waiting'; }).length + '</b><span>ติดขัด / รอคนอื่น</span></div>' +
+      '<div class="stat"><b>' + prop + '</b><span>รอผู้จัดการยืนยัน</span></div></div>' +
+      '<div class="row"><button class="btn primary" data-act="padd">+ เพิ่มความคืบหน้า</button><span class="note">ภาพรวมคือ "สถานะที่ยืนยันล่าสุด" ไม่ใช่ข้อมูลสดแบบ real-time</span></div>' + pform();
+    S.lines.forEach(function (ln) {
+      var ps = live.filter(function (p) { return p.line === ln; });
+      if (!ps.length) return;
+      h += '<div class="stack"><div class="line-h">' + esc(ln) + '</div>' + ps.map(pcard).join('') + '</div>';
+    });
+    var other = live.filter(function (p) { return S.lines.indexOf(p.line) < 0; });
+    if (other.length) h += '<div class="stack"><div class="line-h">สายงานอื่น</div>' + other.map(pcard).join('') + '</div>';
+    if (!live.length) h += '<p class="empty">ยังไม่มีความคืบหน้า กด "เพิ่มความคืบหน้า"</p>';
+    var old = S.progress.filter(function (p) { return p.status === 'Superseded'; });
+    if (old.length) h += '<details class="card"><summary>แถวที่ถูกแทนที่แล้ว (' + old.length + ')</summary><div class="stack" style="margin-top:10px">' + old.map(function (p) { return '<div class="note">' + esc(p.line) + ' · ' + esc(p.area) + ' · ' + esc(p.result) + ' (ณ ' + esc(fmt(p.asOf)) + ')</div>'; }).join('') + '</div></details>';
+    return h + '</div>';
+  }
+
+  /* ---------- settings ---------- */
+  function listEditor(key, title, hint) {
+    return '<section class="card"><div class="sec-h"><h2>' + title + '</h2><span class="count">' + S[key].length + '</span></div><p class="note">' + hint + '</p>' +
+      '<div class="chips">' + S[key].map(function (x, i) { return '<span class="chip">' + (key === 'areas' ? areaDot(x) : '') + esc(x) + '<button data-act="rmitem" data-key="' + key + '" data-i="' + i + '" aria-label="เอา ' + esc(x) + ' ออก">×</button></span>'; }).join('') + '</div>' +
+      '<div class="row"><input class="grow" type="text" id="add-' + key + '" placeholder="ชื่อที่จะเพิ่ม"><button class="btn" data-act="additem" data-key="' + key + '">เพิ่ม</button></div></section>';
+  }
+  function viewSettings() {
+    return '<div class="stack">' +
+      listEditor('owners', 'ผู้รับผิดชอบ', 'เพิ่มได้ทั้งบทบาท (เช่น "นักสังคม") หรือชื่อเล่นรายคน') +
+      listEditor('lines', 'สายงาน', 'หลักสูตรหรืองานหลักที่ใช้จัดกลุ่มแผนและความคืบหน้า') +
+      listEditor('areas', 'พื้นที่', 'อปท. ชุมชน หรือย่าน') +
+      '<section class="card"><div class="sec-h"><h2>ข้อมูลกลาง</h2></div><p class="note">ข้อมูลทั้งหมดในหน้านี้บันทึกร่วมกันเมื่อเปิดผ่านลิงก์ที่มีฐานข้อมูลกลาง ห้ามใส่ข้อมูลจริงที่อ่อนไหว (ชื่อผู้รับบริการ ที่อยู่ ตัวเลขงบองค์กร หรือ transcript ดิบ)</p><div class="row">' +
+      (ui.confirm === 'reset' ? '<button class="btn danger" data-act="reset">ยืนยันกลับเป็นข้อมูลตัวอย่าง</button><button class="btn ghost" data-act="noconfirm">ยกเลิก</button>' : '<button class="btn" data-act="askreset">กลับเป็นข้อมูลตัวอย่าง</button>') +
+      (ui.confirm === 'wipe' ? '<button class="btn danger" data-act="wipe">ยืนยันล้างทั้งหมดและเริ่มว่าง</button><button class="btn ghost" data-act="noconfirm">ยกเลิก</button>' : '<button class="btn" data-act="askwipe">ล้างข้อมูลทั้งหมด</button>') +
+      '</div></section>' +
+      '<section class="card"><div class="sec-h"><h2>กติกา 7 ข้อ</h2></div><ol class="note" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px">' +
+      '<li>งานอยู่ในที่เดียว ไม่จดซ้ำในที่อื่น</li><li>ประชุมที่จัดจริงจดไว้ในแท็บประชุม ไม่ต้องสร้างล่วงหน้า</li><li>ความคืบหน้าที่ยืนยันแล้วห้ามแก้ทับ ให้สร้างแถวใหม่</li>' +
+      '<li>ห้ามใส่ชื่อ/ที่อยู่ผู้รับบริการ ตัวเลขการเงินองค์กร หรือ transcript ดิบ</li><li>ตัวเลขทุกตัวต้องมี ณ วันที่และหลักฐาน</li><li>⚪ ไม่ทราบ ไม่เท่ากับ 🟢 ตามแผน</li><li>AI ร่าง คนยืนยัน</li></ol></section></div>';
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    ['overview', 'meet', 'tasks', 'settings'].forEach(function (t) { document.getElementById('tab-' + t).setAttribute('aria-selected', String(ui.tab === t)); });
+    $v.className = ui.tab === 'overview' ? 'wide' : '';
+    $v.innerHTML = ui.tab === 'overview' ? viewOverview() : ui.tab === 'meet' ? viewMeet() : ui.tab === 'tasks' ? viewTasks() : viewSettings();
+    document.querySelectorAll('.bta').forEach(fit);
+    if (ui.focus) { var el = document.getElementById(ui.focus); if (el) el.focus(); ui.focus = null; }
+  }
+  function fit(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+
+  /* ---------- actions ---------- */
+  function copy(text, okMsg) {
+    var fail = function () { toast('คัดลอกอัตโนมัติไม่ได้ ให้เลือกข้อความแล้วคัดลอกเอง'); };
+    try { navigator.clipboard.writeText(text).then(function () { toast(okMsg); }, fail); } catch (e) { fail(); }
+  }
+  function mainAct(a, b, id) {
+    var t;
+    if (a === 'tab') { ui.tab = b.dataset.tab; ui.confirm = null; render(); return; }
+    if (a === 'done') { t = task(id); t.status = t.status === 'Done' ? 'Next' : 'Done'; save(); render(); return; }
+    if (a === 'week') { t = task(id); t.week = !t.week; save(); render(); return; }
+    if (a === 'open') { ui.open = ui.open === id ? null : id; ui.confirm = null; render(); return; }
+    if (a === 'blocked') { ui.open = id; ui.focus = null; render(); var bi = document.querySelector('[data-t="' + id + '"][data-f="blocked"]'); if (bi) bi.focus(); return; }
+    if (a === 'close') { ui.open = null; ui.confirm = null; render(); return; }
+    if (a === 'askdelete') { ui.confirm = 'del-' + id; render(); return; }
+    if (a === 'noconfirm') { ui.confirm = null; render(); return; }
+    if (a === 'delete') { S.tasks = S.tasks.filter(function (x) { return x.id !== id; }); ui.open = null; ui.confirm = null; save(); render(); toast('ลบงานแล้ว'); return; }
+    if (a === 'quickadd') { addTask(document.getElementById('quick').value); return; }
+    if (a === 'copysum') { copy(summaryText(), 'คัดลอกสรุปงานรายคนแล้ว นำไปวางในกลุ่มทีมได้'); return; }
+    if (a === 'padd') { ui.pform = { line: S.lines[0] || '', area: '', milestone: '', result: '', next: '', nextDate: '', rag: 'g', asOf: todayISO(), conf: 'ประเมิน', decide: false, replaces: null }; ui.progOpen = true; render(); return; }
+    if (a === 'pedit') {
+      var p = S.progress.filter(function (x) { return x.id === id; })[0];
+      ui.pform = { line: p.line, area: p.area, milestone: p.milestone, result: p.result, next: p.next, nextDate: p.nextDate, rag: p.rag, asOf: todayISO(), conf: p.conf, decide: p.decide, replaces: p.status === 'Verified' ? p.id : null, editId: p.status === 'Proposed' ? p.id : null };
+      ui.progOpen = true; render(); return;
+    }
+    if (a === 'pcancel') { ui.pform = null; render(); return; }
+    if (a === 'psave') {
+      var f = ui.pform;
+      if (!f.line || !f.area) { toast('เลือกสายงานและพื้นที่ก่อน'); return; }
+      if (checkMoney([f.result, f.next, f.milestone])) return;
+      if (f.editId) { var q = S.progress.filter(function (x) { return x.id === f.editId; })[0]; ['line', 'area', 'milestone', 'result', 'next', 'nextDate', 'rag', 'asOf', 'conf', 'decide'].forEach(function (k) { q[k] = f[k]; }); }
+      else S.progress.push({ id: uid(), line: f.line, area: f.area, milestone: f.milestone, result: f.result, next: f.next, nextDate: f.nextDate, rag: f.rag, asOf: f.asOf, conf: f.conf, decide: f.decide, status: 'Proposed', replaces: f.replaces });
+      ui.pform = null; save(); render(); toast('บันทึกเป็น "รอยืนยัน" แล้ว กด "ยืนยันแล้ว" เมื่อที่ประชุมรับรอง'); return;
+    }
+    if (a === 'pverify') {
+      var v = S.progress.filter(function (x) { return x.id === id; })[0]; v.status = 'Verified';
+      if (v.replaces) S.progress.forEach(function (x) { if (x.id === v.replaces) x.status = 'Superseded'; });
+      v.replaces = null; save(); render(); toast('ยืนยันแล้ว'); return;
+    }
+    if (a === 'pdel') { S.progress = S.progress.filter(function (x) { return x.id !== id; }); save(); render(); return; }
+    if (a === 'additem') {
+      var k = b.dataset.key, inp = document.getElementById('add-' + k), val = inp.value.trim();
+      if (!val) return;
+      if (S[k].indexOf(val) >= 0) { toast('มีชื่อนี้อยู่แล้ว'); return; }
+      S[k].push(val); save(); ui.focus = 'add-' + k; render(); return;
+    }
+    if (a === 'rmitem') {
+      var key = b.dataset.key, name = S[key][+b.dataset.i];
+      var used = (key === 'owners' && S.tasks.some(function (x) { return x.owner === name; })) ||
+        (key === 'lines' && (S.tasks.some(function (x) { return x.line === name; }) || S.progress.some(function (x) { return x.line === name; }) || S.board.groups.some(function (g) { return g.line === name; }) || S.meetings.some(function (m) { return m.line === name; }))) ||
+        (key === 'areas' && (S.tasks.some(function (x) { return x.area === name; }) || S.progress.some(function (x) { return x.area === name; }) || S.board.groups.some(function (g) { return g.sections.some(function (x) { return x.area === name; }); }) || S.meetings.some(function (m) { return m.area === name; })));
+      if (used) { toast('"' + name + '" ยังมีงาน ความคืบหน้า หรือแผนใช้อยู่ ย้ายหรือแก้ก่อน'); return; }
+      S[key].splice(+b.dataset.i, 1); if (key === 'owners' && ui.owner === name) ui.owner = 'all'; save(); render(); return;
+    }
+    if (a === 'askreset') { ui.confirm = 'reset'; render(); return; }
+    if (a === 'askwipe') { ui.confirm = 'wipe'; render(); return; }
+    if (a === 'reset') { S = sample(); ui.confirm = null; ui.owner = 'all'; save(); render(); toast('กลับเป็นข้อมูลตัวอย่างแล้ว'); return; }
+    if (a === 'wipe') { S.tasks = []; S.progress = []; S.meetings = []; S.board = { asOf: todayISO(), groups: [] }; ui.confirm = null; save(); render(); toast('ล้างข้อมูลแล้ว เริ่มจากว่าง'); return; }
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act]'); if (!b) return;
+    var a = b.dataset.act;
+    if (boardAct(a, b)) return;
+    if (meetAct(a, b)) return;
+    mainAct(a, b, b.dataset.id);
+  });
+
+  /* ---------- fields ---------- */
+  function fieldEvent(el, type) {
+    var d = el.dataset;
+    if (el.classList && el.classList.contains('bta') && type === 'input') fit(el);
+    if (d.mi) { if (type === 'input') { var m = mOf(d.m), it = m && itOf(m, d.mi); if (it) { it.t = el.value; touch(m); save(); } } return true; }
+    if (d.mk) { if (type === 'change') { var mm = mOf(d.m), ii = mm && itOf(mm, d.mk); if (ii) { ii.kind = el.value; touch(mm); save(); render(); } } return true; }
+    if (d.mf) { meetField(el, type); return true; }
+    if (d.bf) { if (d.bf === 'asof' && type === 'input') return true; boardField(el, el.type === 'checkbox' ? el.checked : el.value); return true; }
+    if (d.t) { var tk = task(d.t); if (tk) { tk[d.f] = el.value; save(); } return true; }
+    if (d.pf) { if (ui.pform) ui.pform[d.pf] = el.type === 'checkbox' ? el.checked : el.value; return true; }
+    return false;
+  }
+  document.addEventListener('input', function (e) { fieldEvent(e.target, 'input'); });
+  document.addEventListener('change', function (e) {
+    var el = e.target;
+    if (el.dataset.filter === 'owner') { ui.owner = el.value; render(); return; }
+    if (el.dataset.filter === 'hide') { ui.hideDone = el.checked; render(); return; }
+    fieldEvent(el, 'change');
+  });
+  function click(sel) { var b = document.querySelector(sel); if (b) b.click(); }
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    var el = e.target, id = el.id || '';
+    if (el.classList && el.classList.contains('bta')) { e.preventDefault(); el.blur(); return; }
+    if (id === 'quick') { e.preventDefault(); addTask(el.value); return; }
+    if (id.indexOf('ns-') === 0) { e.preventDefault(); click('[data-act="addstep"][data-s="' + id.slice(3) + '"]'); return; }
+    if (id.indexOf('mi-') === 0) { e.preventDefault(); click('[data-act="mitemadd"][data-m="' + id.slice(3) + '"]'); return; }
+    if (id.indexOf('mn-') === 0 || id.indexOf('gn-') === 0) { e.preventDefault(); el.blur(); return; }
+    if (id.indexOf('add-') === 0) { e.preventDefault(); click('[data-act="additem"][data-key="' + id.slice(4) + '"]'); }
+  });
+  document.addEventListener('toggle', function (e) { if (e.target.id === 'progdet') ui.progOpen = e.target.open; }, true);
+
+  /* ---------- start ---------- */
+  S = load();
+  render();
+  startDb();
+})();
+</script>
