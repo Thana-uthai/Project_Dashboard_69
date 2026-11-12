@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>โครงการกลไก ภาพรวมทีม</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F7F6F3;--card:#FFFFFF;--line:#E0DDD6;--fg:#1F1E1B;--muted:#6E6A61;--accent:#2F5D50;--g:#3F8F5A;--y:#D9A21B;--n:#B9B4AA;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:"IBM Plex Sans Thai",system-ui,sans-serif;font-size:14px;line-height:1.6;
+       padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:24px;padding-bottom:40px}
+  .wrap{max-width:1100px;margin:0 auto;min-width:0}
+  h1{font-size:22px;margin:0 0 4px;font-weight:600;text-wrap:balance}
+  h2{font-size:15px;margin:28px 0 10px;font-weight:600}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+  .mono{font-family:"IBM Plex Mono",monospace}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .stat,.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+  .stat .n{font-size:24px;font-weight:600}
+  .stat .l{color:var(--muted);font-size:12px}
+  .bar{height:8px;background:#EEEBE5;border-radius:4px;overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;background:var(--accent)}
+  .board{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+  .grp{font-weight:600;margin:0}
+  .line{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);margin-bottom:8px;word-break:break-word}
+  .sec{margin-top:10px}
+  .sec b{font-size:12px;color:var(--muted);font-weight:500}
+  .step{display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-top:1px dashed var(--line);min-width:0}
+  .step:first-of-type{border-top:0}
+  .dot{flex:0 0 auto;width:10px;height:10px;border-radius:50%;background:var(--n);margin-top:7px}
+  .dot.done{background:var(--g)}
+  .st{font-size:12px;color:var(--muted)}
+  .prog{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+  .chip{display:inline-block;font-size:12px;padding:1px 9px;border-radius:99px;color:#fff}
+  .rag-y{background:var(--y)} .rag-g{background:var(--g)}
+  .k{color:var(--muted);font-size:12px}
+  .err{background:#FFF4F2;border:1px solid #E8B4A8;padding:12px;border-radius:8px;display:none}
+  .foot{color:var(--muted);font-size:12px;margin-top:28px}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#1B1A17;--card:#24231F;--line:#3A3832;--fg:#EDEBE6;--muted:#A8A399;--accent:#7FB8A4;--n:#5A574F}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>โครงการกลไก: ภาพรวมทีม</h1>
+  <p class="sub">อ่านอย่างเดียว ข้อมูลดึงจาก Google Sheet ทุกครั้งที่เปิดหน้านี้</p>
+  <div id="err" class="err">โหลดข้อมูลไม่ได้ ลองรีเฟรชหน้าอีกครั้ง</div>
+
+  <h2>สรุปความคืบหน้า</h2>
+  <div class="stats" id="sumStats"></div>
+  <div class="card" style="margin-top:10px" id="sumLines"></div>
+
+  <h2>บอร์ดตามกลุ่มงาน</h2>
+  <div class="board" id="board"></div>
+
+  <h2>ความก้าวหน้าล่าสุด</h2>
+  <div class="prog" id="prog"></div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+const SHEET = "1VJZUv1bFoyVqOKj4sDoYpVbsvFxo6djSZT1OAcQ-B-M";
+const url = (tab) => `https://docs.google.com/spreadsheets/d/${SHEET}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
+
+function parseCSV(text){
+  const rows=[]; let row=[], cell="", q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else q=false; } else cell+=c; }
+    else if(c==='"') q=true;
+    else if(c===','){ row.push(cell); cell=""; }
+    else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n') i++; row.push(cell); rows.push(row); row=[]; cell=""; }
+    else cell+=c;
+  }
+  if(cell!==""||row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(r=>r.some(x=>x!==""));
+}
+async function load(tab){
+  const r = await fetch(url(tab), {cache:"no-store"});
+  if(!r.ok) throw new Error(tab);
+  const rows = parseCSV(await r.text());
+  const [head,...body] = rows;
+  return body.map(b=>Object.fromEntries(head.map((h,i)=>[h,b[i]??""])));
+}
+const esc = s => String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct = (d,t)=> t? Math.round(d/t*100) : 0;
+
+async function init(){
+  try{
+    const [board, summary, progress] = await Promise.all([load("ภาพรวม"), load("สรุป"), load("ความก้าวหน้า")]);
+
+    // Summary
+    const total = board.length, done = board.filter(r=>r["สถานะ"]==="เสร็จแล้ว").length;
+    document.getElementById("sumStats").innerHTML = `
+      <div class="stat"><div class="n mono">${total}</div><div class="l">ขั้นตอนทั้งหมด</div></div>
+      <div class="stat"><div class="n mono">${done}</div><div class="l">เสร็จแล้ว</div></div>
+      <div class="stat"><div class="n mono">${pct(done,total)}%</div><div class="l">ความคืบหน้ารวม</div>
+        <div class="bar"><i style="width:${pct(done,total)}%"></i></div></div>`;
+    const sumRows = summary.filter(r=>r["กลุ่ม"] && r["กลุ่ม"]!=="รวม");
+    document.getElementById("sumLines").innerHTML = sumRows.map(r=>{
+      const p = Math.round(parseFloat(String(r["ร้อยละ"]).replace("%",""))||0);
+      return `<div style="margin:8px 0">
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>${esc(r["กลุ่ม"])}</span>
+        <span class="mono k">${esc(r["เสร็จแล้ว"])}/${esc(r["ขั้นตอนทั้งหมด"])}</span></div>
+        <div class="bar"><i style="width:${p}%"></i></div></div>`;
+    }).join("");
+
+    // Board: group by กลุ่ม, then by พื้นที่
+    const groups = [...new Set(board.map(r=>r["กลุ่ม"]))];
+    document.getElementById("board").innerHTML = groups.map(g=>{
+      const items = board.filter(r=>r["กลุ่ม"]===g);
+      const line = items[0]["สายงาน"];
+      const areas = [...new Set(items.map(r=>r["พื้นที่"]))];
+      const gDone = items.filter(r=>r["สถานะ"]==="เสร็จแล้ว").length;
+      return `<div class="card">
+        <p class="grp">${esc(g)} <span class="k mono">${gDone}/${items.length}</span></p>
+        <div class="line">${esc(line)}</div>
+        ${areas.map(a=>`<div class="sec"><b>${esc(a)}</b>
+          ${items.filter(r=>r["พื้นที่"]===a).map(r=>{
+            const d = r["สถานะ"]==="เสร็จแล้ว";
+            return `<div class="step"><span class="dot ${d?"done":""}"></span><div>${esc(r["ขั้นตอน"])}<div class="st">${esc(r["สถานะ"])}</div></div></div>`;
+          }).join("")}</div>`).join("")}
+      </div>`;
+    }).join("");
+
+    // Progress
+    document.getElementById("prog").innerHTML = progress.map(r=>{
+      const rag = r["RAG"]==="เขียว" ? "rag-g" : "rag-y";
+      return `<div class="card">
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <b>${esc(r["ไมล์สโตน"])}</b><span class="chip ${rag}">${esc(r["RAG"])}</span></div>
+        <div class="line">${esc(r["สายงาน"])} · ${esc(r["พื้นที่"])}</div>
+        <div style="margin-top:6px">${esc(r["ผลล่าสุด"])}</div>
+        <div class="k" style="margin-top:6px">ข้อมูล ณ ${esc(r["วันที่ข้อมูล"])} · สถานะ ${esc(r["สถานะ"])}</div>
+        <div style="margin-top:8px"><span class="k">ขั้นต่อไป:</span> ${esc(r["ขั้นต่อไป"])}
+          ${r["วันที่นัด"]?`<span class="mono k"> (${esc(r["วันที่นัด"])})</span>`:""}</div>
+      </div>`;
+    }).join("");
+
+    document.getElementById("foot").textContent = "อัปเดตจาก Google Sheet เมื่อ " + new Date().toLocaleString("th-TH");
+  }catch(e){
+    document.getElementById("err").style.display="block";
+  }
+}
+init();
+</script>
+</body>
+</html>
